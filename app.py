@@ -1,5 +1,7 @@
-import os, requests, random, time, threading
+import os, time, threading
 from flask import Flask
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 
 app = Flask(__name__)
 bot_views = 0
@@ -7,29 +9,45 @@ bot_views = 0
 @app.route('/')
 def home():
     global bot_views
-    return str(bot_views)
+    return f"🔥 إجمالي المشاهدات الحقيقية المسجلة: {bot_views}"
 
-def watch_simulator():
+def real_browser_bot():
     global bot_views
-    video_url = os.environ.get("VIDEO_URL", "https://youtu.be/9Uz04LYQe5k?si=m5KdjuWAC8_DMGs_")
+    video_url = os.environ.get("VIDEO_URL", "https://youtu.be/9Uz04LYQe5k")
     
     while True:
+        driver = None
         try:
-            # محاكاة زيارة حقيقية وسريعة للفيديو القصير بدون الحاجة لمتصفح ثقيل ينخنق
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            response = requests.get(video_url, headers=headers, timeout=15)
-            if response.status_code == 200:
-                bot_views += 1
-                print(f"✅ تم تسجيل مشاهدة ناجحة! الإجمالي: {bot_views}")
+            options = Options()
+            options.headless = True
+            options.add_argument("--disable-gpu")
+            
+            driver = webdriver.Firefox(options=options)
+            driver.set_page_load_timeout(45)
+            
+            print("🚀 جاري فتح الفيديو بمتصفح حقيقي...")
+            driver.get(video_url)
+            
+            # ⏳ الانتظار مدة الفيديو القصير (35 ثانية) لكي يراها يوتيوب مشاهدة كاملة
+            time.sleep(35)
+            
+            bot_views += 1
+            print(f"✅ تم احتساب مشاهدة يوتيوب حقيقية! الإجمالي: {bot_views}")
+            
         except Exception as e:
-            pass
+            print(f"⚠️ خطأ مؤقت، جاري إعادة المحاولة...")
+        finally:
+            if driver:
+                try:
+                    driver.quit()
+                except:
+                    pass
         
-        # استراحة قصيرة جداً لتكرار الضربات بسرعة وسلاسة
-        time.sleep(20)
+        # استراحة قصيرة قبل فتح الزيارة التالية
+        time.sleep(5)
 
-threading.Thread(target=watch_simulator, daemon=True).start()
+# تشغيل البوت في الخلفية
+threading.Thread(target=real_browser_bot, daemon=True).start()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=7860)
